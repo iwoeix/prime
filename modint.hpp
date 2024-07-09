@@ -6,14 +6,14 @@
 
 namespace modint
 {
-    template<std::unsigned_integral auto m> class modint
+    template<std::unsigned_integral auto m> class static_modint
     {
         uintmax_t v = 0;
 
         public:
-        ALWAYS_INLINE modint() = default;
+        ALWAYS_INLINE static_modint() = default;
 
-        ALWAYS_INLINE modint(std::integral auto x)
+        ALWAYS_INLINE static_modint(std::integral auto x)
         {
             x %= m;
             if (x < 0) x += m;
@@ -30,157 +30,151 @@ namespace modint
             return m;
         }
 
-        ALWAYS_INLINE constexpr modint& operator++()
+        ALWAYS_INLINE constexpr static_modint& operator++()
         {
             v++;
             if (v == m) v = 0;
             return *this;
         }
 
-        ALWAYS_INLINE constexpr modint& operator--()
+        ALWAYS_INLINE constexpr static_modint& operator--()
         {
             if (v == 0) v = m;
             v--;
             return *this;
         }
 
-        ALWAYS_INLINE constexpr modint operator++(int)
+        ALWAYS_INLINE constexpr static_modint operator++(int)
         {
-            modint res = *this;
+            static_modint res = *this;
             ++*this;
             return res;
         }
 
-        ALWAYS_INLINE constexpr modint operator--(int)
+        ALWAYS_INLINE constexpr static_modint operator--(int)
         {
-            modint res = *this;
+            static_modint res = *this;
             --*this;
             return res;
         }
 
-        ALWAYS_INLINE constexpr modint& operator+=(const modint& rhs)
+        ALWAYS_INLINE constexpr static_modint& operator+=(const static_modint& rhs)
         {
             v += rhs.v;
             if (v >= m) v -= m;
             return *this;
         }
 
-        ALWAYS_INLINE constexpr modint& operator-=(const modint& rhs)
+        ALWAYS_INLINE constexpr static_modint& operator-=(const static_modint& rhs)
         {
             v -= rhs.v;
             if (v >= m) v += m;
             return *this;
         }
 
-        ALWAYS_INLINE constexpr modint& operator*=(const modint& rhs)
+        ALWAYS_INLINE constexpr static_modint& operator*=(const static_modint& rhs)
         {
             (v *= rhs.v) %= m;
             return *this;
         }
 
-        ALWAYS_INLINE constexpr modint& operator/=(const modint& rhs)
+        ALWAYS_INLINE constexpr static_modint& operator/=(const static_modint& rhs)
         {
             return *this *= inv(rhs);
         }
 
-        ALWAYS_INLINE constexpr modint& operator^=(const std::integral auto& rhs)
+        ALWAYS_INLINE constexpr static_modint& operator^=(const std::integral auto& rhs)
         {
-            modint res = 1;
+            static_modint res = 1;
             for (uintmax_t t = rhs; t; t & 1 && (res *= *this, 0), *this *= *this, t >>= 1);
             return *this = res;
         }
 
-        ALWAYS_INLINE constexpr friend modint operator+(modint lhs, const modint& rhs)
+        ALWAYS_INLINE constexpr friend static_modint operator+(static_modint lhs, const static_modint& rhs)
         {
             lhs += rhs;
             return lhs;
         }
 
-        ALWAYS_INLINE constexpr friend modint operator-(modint lhs, const modint& rhs)
+        ALWAYS_INLINE constexpr friend static_modint operator-(static_modint lhs, const static_modint& rhs)
         {
             lhs -= rhs;
             return lhs;
         }
 
-        ALWAYS_INLINE constexpr friend modint operator*(modint lhs, const modint& rhs)
+        ALWAYS_INLINE constexpr friend static_modint operator*(static_modint lhs, const static_modint& rhs)
         {
             lhs *= rhs;
             return lhs;
         }
 
-        ALWAYS_INLINE constexpr friend modint operator/(modint lhs, const modint& rhs)
+        ALWAYS_INLINE constexpr friend static_modint operator/(static_modint lhs, const static_modint& rhs)
         {
             lhs /= rhs;
             return lhs;
         }
 
-        ALWAYS_INLINE constexpr friend modint operator^(modint lhs, const std::integral auto& rhs)
+        ALWAYS_INLINE constexpr friend static_modint operator^(static_modint lhs, const std::integral auto& rhs)
         {
             lhs ^= rhs;
             return lhs;
         }
 
-        ALWAYS_INLINE constexpr modint operator+()
+        ALWAYS_INLINE constexpr static_modint operator+()
         {
             return *this;
         }
 
-        ALWAYS_INLINE constexpr modint operator-()
+        ALWAYS_INLINE constexpr static_modint operator-()
         {
-            return modint() - *this;
+            return static_modint() - *this;
+        }
+
+        ALWAYS_INLINE constexpr friend static_modint inv(const static_modint& obj)
+        {
+            static_modint res, new_res = 1;
+            uintmax_t t = obj.mod(), new_t = obj.val();
+            for (static_modint q; new_t; q = t / new_t, res -= q * new_res, t -= q.val() * new_t, std::swap(res, new_res), std::swap(t, new_t));
+            assert(t == 1);
+            return res;
         }
     };
 
-    template<std::unsigned_integral auto m> ALWAYS_INLINE constexpr modint<m> inv(const modint<m>& obj)
-    {
-        modint<m> res, new_res = 1;
-        uintmax_t t = obj.mod(), new_t = obj.val();
-        for (modint<m> q; new_t; q = t / new_t, res -= q * new_res, t -= q.val() * new_t, std::swap(res, new_res), std::swap(t, new_t));
-        assert(t == 1);
-        return res;
-    }
-
-    template<std::unsigned_integral auto m> ALWAYS_INLINE std::ostream& operator<<(std::ostream& os, const modint<m>& obj)
+    template<std::unsigned_integral auto m> ALWAYS_INLINE std::ostream& operator<<(std::ostream& os, const static_modint<m>& obj)
     {
         return os << obj.val();
     }
 
-    template<std::unsigned_integral auto m> ALWAYS_INLINE std::istream& operator>>(std::istream& is, modint<m>& obj)
+    template<std::unsigned_integral auto m> ALWAYS_INLINE std::istream& operator>>(std::istream& is, static_modint<m>& obj)
     {
         std::string s;
         is >> s, obj = 0;
-        for (char c : s)
+        bool neg = s[0] == '-';
+        for (uintmax_t i = neg; i < s.size(); i++)
         {
-            if (!isdigit(c))
+            if (!isdigit(s[i]))
             {
                 is.setstate(std::ios::failbit);
                 break;
             }
-            (obj *= 10) += c ^ 48;
+            (obj *= 10) += s[i] ^ 48;
         }
+        if (neg) obj = -obj;
         return is;
     }
-
-    class dynamic_modint;
-
-    ALWAYS_INLINE constexpr dynamic_modint inv(const dynamic_modint& obj);
-
-    class dynamic_modint
+    
+    template<std::unsigned_integral auto id> class dynamic_modint
     {
-        uintmax_t v = 0, m = 0;
+        uintmax_t v = 0;
+        static uintmax_t m;
 
         public:
         ALWAYS_INLINE dynamic_modint() = default;
 
-        ALWAYS_INLINE dynamic_modint(std::unsigned_integral auto mod) : m(mod), v(0)
+        ALWAYS_INLINE dynamic_modint(std::integral auto x)
         {
-
-        }
-
-        ALWAYS_INLINE dynamic_modint(std::integral auto x, std::unsigned_integral auto mod) : m(mod)
-        {
-            x %= m;
-            if (x < 0) x += m;
+            x %= mod();
+            if (x < 0) x += mod();
             v = x;
         }
 
@@ -191,19 +185,20 @@ namespace modint
 
         ALWAYS_INLINE constexpr uintmax_t mod() const
         {
+            assert(m);
             return m;
         }
 
         ALWAYS_INLINE constexpr dynamic_modint& operator++()
         {
             v++;
-            if (v == m) v = 0;
+            if (v == mod()) v = 0;
             return *this;
         }
 
         ALWAYS_INLINE constexpr dynamic_modint& operator--()
         {
-            if (v == 0) v = m;
+            if (v == 0) v = mod();
             v--;
             return *this;
         }
@@ -225,20 +220,20 @@ namespace modint
         ALWAYS_INLINE constexpr dynamic_modint& operator+=(const dynamic_modint& rhs)
         {
             v += rhs.v;
-            if (v >= m) v -= m;
+            if (v >= m) v -= mod();
             return *this;
         }
 
         ALWAYS_INLINE constexpr dynamic_modint& operator-=(const dynamic_modint& rhs)
         {
             v -= rhs.v;
-            if (v >= m) v += m;
+            if (v >= m) v += mod();
             return *this;
         }
 
         ALWAYS_INLINE constexpr dynamic_modint& operator*=(const dynamic_modint& rhs)
         {
-            (v *= rhs.v) %= m;
+            (v *= rhs.v) %= mod();
             return *this;
         }
 
@@ -249,7 +244,7 @@ namespace modint
 
         ALWAYS_INLINE constexpr dynamic_modint& operator^=(const std::integral auto& rhs)
         {
-            dynamic_modint res = {1, m};
+            dynamic_modint res = 1;
             for (uintmax_t t = rhs; t; t & 1 && (res *= *this, 0), *this *= *this, t >>= 1);
             return *this = res;
         }
@@ -293,37 +288,44 @@ namespace modint
         {
             return dynamic_modint() - *this;
         }
+
+        ALWAYS_INLINE constexpr friend dynamic_modint inv(const dynamic_modint& obj)
+        {
+            dynamic_modint res, new_res = 1;
+            uintmax_t t = obj.mod(), new_t = obj.val();
+            for (dynamic_modint q; new_t; q = t / new_t, res -= q * new_res, t -= q.val() * new_t, std::swap(res, new_res), std::swap(t, new_t));
+            assert(t == 1);
+            return res;
+        }
+
+        ALWAYS_INLINE static void set_mod(std::unsigned_integral auto mod)
+        {
+            m = mod;
+        }
     };
 
-    ALWAYS_INLINE constexpr dynamic_modint inv(const dynamic_modint& obj)
-    {
-        uintmax_t m = obj.mod();
-        dynamic_modint res(0, m), new_res(1, m);
-        uintmax_t t = obj.mod(), new_t = obj.val();
-        for (dynamic_modint q(m); new_t; q = t / new_t, res -= q * new_res, t -= q.val() * new_t, std::swap(res, new_res), std::swap(t, new_t));
-        assert(t == 1);
-        return res;
-    }
+    template<std::unsigned_integral auto id> uintmax_t dynamic_modint<id>::m(0);
 
-    ALWAYS_INLINE std::ostream& operator<<(std::ostream& os, const dynamic_modint& obj)
+    template<std::unsigned_integral auto id> ALWAYS_INLINE std::ostream& operator<<(std::ostream& os, const dynamic_modint<id>& obj)
     {
         return os << obj.val();
     }
 
-    ALWAYS_INLINE std::istream& operator>>(std::istream& is, dynamic_modint& obj)
+    template<std::unsigned_integral auto id> ALWAYS_INLINE std::istream& operator>>(std::istream& is, dynamic_modint<id>& obj)
     {
         std::string s;
-        is >> s, obj = {0, obj.mod()};
-        dynamic_modint f(10, obj.mod());
-        for (char c : s)
+        is >> s, obj = 0;
+        bool neg = s[0] == '-';
+        for (uintmax_t i = neg; i < s.size(); i++)
         {
-            if (!isdigit(c))
+            if (!isdigit(s[i]))
             {
                 is.setstate(std::ios::failbit);
                 break;
             }
-            (obj *= f) += {c ^ 48, obj.mod()};
+            (obj *= 10) += s[i] ^ 48;
         }
+        if (neg) obj = -obj;
         return is;
     }
 }
